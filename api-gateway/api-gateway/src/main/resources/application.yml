@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: API-Gateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: todoapp
+          uri: lb://todoapp
+          predicates:
+            - Path=/api/app/**
+          filters:
+            - name: JwtValidationFilter
+
+        - id: loginService
+          uri: lb://loginService
+          predicates:
+            - Path=/api/auth/**
+
+server:
+  port: 8082
+

@@ -1,0 +1,51 @@
+version: '3.9'
+networks:
+  app_network:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: todoapp
+    networks:
+      - app_network
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  registry:
+    build:
+      context: ./service registry/service-registry
+      dockerfile: Dockerfile
+    networks:
+      - app_network
+    ports:
+      - "8761:8761"
+
+  todoapp:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+          condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/todoapp
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      EUREKA_SERVER_URL: http://registry:8761/eureka/
+    networks:
+      - app_network
+    ports:
+      - "8080:8080"
+volumes:
+  postgres_data:
