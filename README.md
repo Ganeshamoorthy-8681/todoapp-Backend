@@ -33,15 +33,6 @@ The **Login Service** is maintained in a separate repository.
 ---
 
 ## Usage
-- Access the API Gateway at `http://localhost:8080` to interact with the ToDoApp service.
+- Access the API Gateway at `http://localhost:8082` to interact with the ToDoApp service.
 
 ---
-
-## License
-This project is licensed under the MIT License.
-
----
-
-## Contact
-- **Email**: [your-email@example.com]
-- **GitHub**: [Your GitHub](https://github.com/your-username)
