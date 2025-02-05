@@ -1,0 +1,127 @@
+#version: '3.9'
+networks:
+  app_network:
+    driver: bridge
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - app_network
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      # Define listeners
+      KAFKA_LISTENERS: INSIDE_KAFKA://0.0.0.0:9092,OUTSIDE_KAFKA://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INSIDE_KAFKA://kafka:9092,OUTSIDE_KAFKA://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE_KAFKA:PLAINTEXT,OUTSIDE_KAFKA:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE_KAFKA
+      # Create topics
+      KAFKA_CREATE_TOPICS: "account_creation:1:1"
+    networks:
+      - app_network
+    ports:
+      - "9093:9093"
+      - "9092:9092"
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: todoapp
+    networks:
+      - app_network
+    depends_on:
+      - kafka
+      - zookeeper
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  registry:
+#    build:
+#      context: ./service registry/service-registry
+#      dockerfile: Dockerfile
+    image: ganeshamoorthy8681/projects:taskflow-service-registry
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+    ports:
+      - "8761:8761"
+
+  gateway:
+#    build:
+#      context: ./api-gateway/api-gateway
+#      dockerfile: Dockerfile
+    image: ganeshamoorthy8681/projects:taskflow-api-gateway
+    depends_on:
+      - login
+    networks:
+      - app_network
+    ports:
+      - "8082:8082"
+    environment:
+      LOGIN_SERVICE_URL: http://login:8087
+      EUREKA_SERVER_URL: http://registry:8761/eureka/
+
+  login:
+#    build:
+#      context: ../login
+#      dockerfile: Dockerfile
+    image: ganeshamoorthy8681/projects:login
+    depends_on:
+      - postgres
+    environment:
+      DATASOURCE_URL: jdbc:postgresql://postgres:5432/login
+      DATASOURCE_PASSWORD: password
+      DATASOURCE_USERNAME: postgres
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ENV_SECRET_KEY: ${ENV_SECRET}
+      GOOGLE_AUTHORIZE_URL: https://accounts.google.com/o/oauth2/v2/auth
+      GOOGLE_REDIRECT_URL: http://login:8080/api/auth/google/callback
+      KAFKA_SERVER_URL: http://kafka:9092
+      EUREKA_SERVER_URL: http://registry:8761/eureka/
+      PORT: 8087
+    networks:
+      - app_network
+
+  todoapp:
+#    build:
+#      context: ./app
+#      dockerfile: Dockerfile
+    image: ganeshamoorthy8681/projects:taskflow-app
+    depends_on:
+      - login
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/todoapp
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      KAFKA_SERVER_URL: http://kafka:9092
+      EUREKA_SERVER_URL: http://registry:8761/eureka/
+#      PORT: 8085
+    networks:
+      - app_network
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

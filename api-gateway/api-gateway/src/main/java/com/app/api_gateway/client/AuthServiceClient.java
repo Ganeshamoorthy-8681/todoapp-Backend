@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@FeignClient( name = "loginService", url = "http://localhost:8081")
+@FeignClient( name = "loginService", url = "${loginService_URL}")
 public interface AuthServiceClient {
     @GetMapping("api/auth/validate")
     public ResponseEntity<String> validateToken(@CookieValue(name = "JWT")String token);

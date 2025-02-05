@@ -12,6 +12,8 @@ COPY pom.xml ./
 COPY src ./src
 RUN chmod +x mvnw
 
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+
 # Package the application into a JAR file
 # Use the 'prod' profile to build the JAR for production
 RUN ./mvnw clean package -DskipTests
