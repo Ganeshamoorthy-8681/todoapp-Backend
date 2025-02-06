@@ -34,11 +34,15 @@ services:
       - "9092:9092"
 
   postgres:
-    image: postgres:16
+    image: ganeshamoorthy8681/projects:taskflow-db
+#    build:
+#      context: ./postgres/
+#      dockerfile: Dockerfile
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: todoapp
+#      POSTGRES_DB: todoapp
     networks:
       - app_network
     depends_on:
@@ -48,7 +52,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

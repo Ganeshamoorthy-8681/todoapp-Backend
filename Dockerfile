@@ -1,14 +1,13 @@
-FROM docker:dind
+FROM docker:latest
 
-# Install Docker Compose
-RUN apk add --no-cache py3-pip && \
-    pip3 install docker-compose
+# Install docker-compose
+RUN apk add  docker-cli-compose
 
-# Set the working directory to where the docker-compose.yml file will be
+# Set working directory
 WORKDIR /app
 
-# Copy your docker-compose.yml file into the container
-COPY docker-compose.yml .
+# Copy the docker-compose file
+COPY docker-compose.yml ./
 
-# Run docker-compose inside the container
-CMD ["docker-compose", "up"]
+# Start the containers in detached mode
+CMD ["docker-compose", "up", "-d"]
